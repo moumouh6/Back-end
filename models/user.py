@@ -1,28 +1,26 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
-import enum
-
-class UserType(enum.Enum):
-    ETUDIANT = "etudiant"
-    PROF = "prof"
-    RH = "rh"
-
-Base = declarative_base()
+from datetime import datetime
+from .base import Base
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    nom = Column(String)
-    prenom = Column(String)
+    nom = Column(String, index=True)
+    prenom = Column(String, index=True)
     departement = Column(String)
-    fonction = Column(String)
-    type_utilisateur = Column(Enum(UserType))
+    role = Column(String)
     email = Column(String, unique=True, index=True)
     telephone = Column(String)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    is_approved = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationship with Course
-    courses = relationship("Course", back_populates="instructor") 
+    courses = relationship("Course", back_populates="instructor")
+    course_progress = relationship("CourseProgress", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
+    sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
+    received_messages = relationship("Message", foreign_keys="Message.receiver_id", back_populates="receiver") 

@@ -1,15 +1,12 @@
-from pydantic import BaseModel, EmailStr, constr, HttpUrl
+from pydantic import BaseModel, EmailStr, constr
 from typing import Optional, List
 from datetime import datetime
-from models.user import UserType
-from models.course import CourseType, CourseStatus, MaterialType
 
 class UserBase(BaseModel):
     nom: str
     prenom: str
-    departement: str
-    fonction: str
-    type_utilisateur: UserType
+    departement: Optional[str] = None
+    role: str
     email: EmailStr
     telephone: str
 
@@ -17,16 +14,19 @@ class UserCreate(UserBase):
     password: str
     confirm_password: str
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
 class User(UserBase):
     id: int
     is_active: bool
+    is_approved: bool
 
     class Config:
         from_attributes = True
+
+class UserApproval(BaseModel):
+    is_approved: bool
+
+class PendingUser(User):
+    pass
 
 class Token(BaseModel):
     access_token: str
@@ -39,33 +39,22 @@ class TokenData(BaseModel):
 class CourseBase(BaseModel):
     title: str
     description: str
-    course_type: CourseType
-    start_datetime: datetime
-    end_datetime: datetime
-    meeting_link: Optional[str] = None
+    departement: Optional[str] = None
 
 class CourseCreate(CourseBase):
     pass
 
-class CourseUpdate(BaseModel):
-    status: CourseStatus
-
-# Course Material schemas
 class CourseMaterialBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    material_type: MaterialType
-    department: Optional[str] = None
-    is_public: bool = True
+    file_name: str
+    file_type: str
 
 class CourseMaterialCreate(CourseMaterialBase):
-    external_link: Optional[str] = None
+    pass
 
 class CourseMaterial(CourseMaterialBase):
     id: int
     course_id: int
-    file_path: Optional[str] = None
-    external_link: Optional[str] = None
+    file_path: str
     uploaded_at: datetime
 
     class Config:
@@ -74,12 +63,53 @@ class CourseMaterial(CourseMaterialBase):
 class Course(CourseBase):
     id: int
     instructor_id: int
-    instructor: User
-    image_path: Optional[str] = None
-    status: CourseStatus
     created_at: datetime
     updated_at: datetime
     materials: List[CourseMaterial] = []
+
+    class Config:
+        from_attributes = True
+
+class NotificationBase(BaseModel):
+    title: str
+    message: str
+    type: str
+
+class NotificationCreate(NotificationBase):
+    pass
+
+class Notification(NotificationBase):
+    id: int
+    user_id: int
+    is_read: bool
+    created_at: datetime
+    related_course_id: Optional[int] = None
+    related_material_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class MessageBase(BaseModel):
+    content: str
+    receiver_id: int
+
+class MessageCreate(MessageBase):
+    pass
+
+class Message(MessageBase):
+    id: int
+    sender_id: int
+    file_path: Optional[str] = None
+    file_type: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class MessageInDB(Message):
+    sender: User
+    receiver: User
 
     class Config:
         from_attributes = True 
